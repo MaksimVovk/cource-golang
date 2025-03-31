@@ -1,131 +1,74 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"os"
-	"strconv"
+
+	"example.com/bank/fileops"
 )
 
-func writeBalanceToFile(balance float64) {
-	bytes := fmt.Sprint(balance)
-	os.WriteFile("balance.txt", []byte(bytes), 0644)
-}
-
-func getBalanceFromFile() (float64, error) {
-	data, err := os.ReadFile("balance.txt")
-	if err != nil {
-		return 1000.0, errors.New("Faild to read file.")
-	}
-	balanceText := string(data)
-	val, err := strconv.ParseFloat(balanceText, 64)
-
-	if err != nil {
-		return 1000.0, errors.New("Faild to parse stored balance value.")
-	}
-	return val, nil
-}
+const accountBalanceFile = "balance.txt"
 
 func main() {
-	accountBalance, err := getBalanceFromFile()
+	var accountBalance, err = fileops.GetFloatFromFile(accountBalanceFile)
 
 	if err != nil {
-		fmt.Printf("Error %v\n", err)
+		fmt.Println("ERROR")
+		fmt.Println(err)
+		fmt.Println("---------")
+		// panic("Can't continue, sorry.")
 	}
-
-	writeBalanceToFile(accountBalance)
 
 	fmt.Println("Welcome to Go Bank!")
 
 	for {
-		fmt.Println("What do you want to do?")
-		fmt.Println("1. Check balance")
-		fmt.Println("2. Deposit money")
-		fmt.Println("3. Withdraw money")
-		fmt.Println("4. Exit")
+		presentOptions()
 
 		var choice int
 		fmt.Print("Your choice: ")
 		fmt.Scan(&choice)
 
-		// isCheckBalance := choice == 1
+		// wantsCheckBalance := choice == 1
 
 		switch choice {
 		case 1:
 			fmt.Println("Your balance is", accountBalance)
 		case 2:
-			amount, err := changeBalance("deposit")
+			fmt.Print("Your deposit: ")
+			var depositAmount float64
+			fmt.Scan(&depositAmount)
 
-			if err != nil {
-				fmt.Println(err)
+			if depositAmount <= 0 {
+				fmt.Println("Invalid amount. Must be greater than 0.")
+				// return
 				continue
 			}
 
-			accountBalance += amount
-			fmt.Println("Your balance now is", accountBalance)
-			writeBalanceToFile(accountBalance)
+			accountBalance += depositAmount // accountBalance = accountBalance + depositAmount
+			fmt.Println("Balance updated! New amount:", accountBalance)
+			fileops.WriteFloatToFile(accountBalance, accountBalanceFile)
 		case 3:
-			amount, err := changeBalance("withdraw")
+			fmt.Print("Withdrawal amount: ")
+			var withdrawalAmount float64
+			fmt.Scan(&withdrawalAmount)
 
-			if err != nil {
-				fmt.Println(err)
+			if withdrawalAmount <= 0 {
+				fmt.Println("Invalid amount. Must be greater than 0.")
 				continue
 			}
 
-			if amount > accountBalance {
-				fmt.Println("You don't have enough money.")
+			if withdrawalAmount > accountBalance {
+				fmt.Println("Invalid amount. You can't withdraw more than you have.")
 				continue
 			}
 
-			accountBalance -= amount
-			fmt.Println("Your balance now is", accountBalance)
-			writeBalanceToFile(accountBalance)
+			accountBalance -= withdrawalAmount // accountBalance = accountBalance + depositAmount
+			fmt.Println("Balance updated! New amount:", accountBalance)
+			fileops.WriteFloatToFile(accountBalance, accountBalanceFile)
 		default:
 			fmt.Println("Goodbye!")
-			fmt.Println("Thanks for choosing our bank!")
+			fmt.Println("Thanks for choosing our bank")
 			return
+			// break
 		}
-
-		// if choice == 1 {
-		// 	fmt.Println("Your balance is", accountBalance)
-		// } else if choice == 2 {
-		// 	amount := changeBalance("deposit")
-
-		// 	if amount <= 0 {
-		// 		fmt.Println("Invalid amount.")
-		// 		continue
-		// 	}
-
-		// 	accountBalance += amount
-		// 	fmt.Println("Your balance now is", accountBalance)
-		// } else if choice == 3 {
-		// 	amount := changeBalance("withdraw")
-
-		// 	if amount <= 0 {
-		// 		fmt.Println("Invalid amount.")
-		// 		continue
-		// 	}
-
-		// 	if amount > accountBalance {
-		// 		fmt.Println("You don't have enough money.")
-		// 		continue
-		// 	}
-
-		// 	accountBalance -= amount
-		// 	fmt.Println("Your balance now is", accountBalance)
-		// } else {
-		// 	fmt.Println("Goodbye!")
-		// 	break
-		// }
 	}
-}
-
-func changeBalance(operationType string) (float64, error) {
-	var amount float64
-	fmt.Printf("What amount would you like to %v? ", operationType)
-	fmt.Scan(&amount)
-	if amount < 1 {
-		return 0, errors.New("Value is less than 1")
-	}
-	return amount, nil
 }
